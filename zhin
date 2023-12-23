@@ -1,0 +1,170 @@
+import pgzrun
+import game_map
+
+WIDTH = 960
+HEIGHT = 420
+TITLE = 'Pycxk Zero Cxk'
+
+level = 1
+
+bgImg = game_map.get_bg(level)
+bg = Actor(bgImg)
+zyPos = game_map.get_zy(level)
+zy = Actor('壮猿.png', zyPos)
+speed = 0
+
+
+def createActor(name):
+    posList = game_map.get_list(level, name)
+    actorList = []
+    for p in posList:
+        a = Actor(name + '.png', p)
+        actorList.append(a)
+    return actorList
+
+
+brickList = createActor('砖块')
+grassList = createActor('草地')
+thornList = createActor('地刺')
+drugList = createActor('药瓶')
+
+state = True
+
+success = Actor('通关成功.png')
+over = Actor('通关失败.png')
+
+def draw():
+    bg.draw()
+    screen.draw.text(str(level),center=[30, 30],color='red',fontname = 'exo',fontsize = 50)
+    for a in brickList:
+        a.draw()
+    for a in grassList:
+        a.draw()
+    for a in thornList:
+        a.draw()
+    for a in drugList:
+        a.draw()
+    zy.draw()
+    if state == 'success':
+        success.draw()
+    if state == False:
+        over.draw()
+
+num1 = 1
+def walkRight():
+    global num1
+    zy.image = 'right' + str(num1) + '.png'
+    num1 += 1
+    if num1 == 4:
+        num1 = 1
+
+num2 = 1
+def walkLeft():
+    global num2
+    zy.image = 'left' + str(num2) + '.png'
+    num2 += 1
+    if num2 == 4:
+        num2 = 1
+
+def on_key_down():
+    if keyboard.K_RIGHT :
+        clock.schedule_interval(walkRight, 0.08)
+    if keyboard.K_LEFT :
+        clock.schedule_interval(walkLeft, 0.08)
+
+def on_key_up(key):
+    if key == keys.RIGHT :
+        clock.unschedule(walkRight)
+    if key == keys.LEFT :
+        clock.unschedule(walkLeft)
+
+def update():
+    global speed
+    global state
+    global level
+    global zy,bg
+    global brickList,grassList,thornList,drugList
+    # 跳跃
+    if keyboard.K_UP:
+        zy.y -= 8
+        for b in brickList:
+            if zy.colliderect(b):
+                zy.y += 8
+
+    # 壮猿下落 
+    flag = False
+    for g in grassList:
+        if zy.colliderect(g):
+            flag = True
+            zy.bottom = g.top
+    if flag == False:
+        speed += 0.3
+        zy.y += speed
+    else:
+        speed = 0
+
+
+    # 按下右键
+    run = False
+    if keyboard.K_SPACE:
+        run = True
+    else:
+        run = False
+    if keyboard.K_RIGHT and zy.right < 960:
+        if run:
+            zy.x += 5
+        else:
+            zy.x += 2
+        for b in brickList:
+            if zy.colliderect(b):
+                if run:
+                    zy.x -= 5
+                else:
+                    zy.x -= 2
+        
+    # 按下左键
+    if keyboard.K_LEFT and zy.left > 0:
+        if run:
+            zy.x -= 5
+        else:
+            zy.x -= 2
+        for b in brickList:
+            if zy.colliderect(b):
+                if run:
+                    zy.x += 5
+                else:
+                    zy.x += 2
+
+    for d in drugList:
+        if d.colliderect(zy):
+            drugList.remove(d)
+
+    if len(drugList) == 0:
+        if level < 5:
+            print('通关成功')
+            level += 1
+            bg.image = game_map.get_bg(level)
+            zy.pos = game_map.get_zy(level)
+            brickList = createActor('砖块')
+            grassList = createActor('草地')
+            thornList = createActor('地刺')
+            drugList = createActor('药瓶')
+        else:
+            if state == True:
+                print('游戏成功')
+            state = 'success'
+    #掉出界面退出游戏
+    if zy.top > 420:
+        if state == True:
+            print('[壮猿]掉出了世界')
+        state = False
+    for t in thornList:
+        if zy.colliderect(t):
+            if state == True:
+                print('游戏失败')
+            state = False
+    if state == False:
+        zy.pos = [114514,1919810]
+
+
+pgzrun.go()
